@@ -1,10 +1,12 @@
 import numpy as np
 import speaker_identification as si
 import soundfile as sf
+import sounddevice as sd
 import os
 from deep_speech import Speech2Text
 import sox
-
+import pandas as pd
+from pysndfx import AudioEffectsChain
 
 def cosine_similarity(x, y):
     return np.dot(x, y) / (np.sqrt(np.dot(x, x)) * np.sqrt(np.dot(y, y)))
@@ -72,8 +74,7 @@ def main():
     #speaker_id_engine = si.SpeakerIdentification()
     s2t = Speech2Text()
 
-    consine_diff_list = []
-    accuracy_list = []
+    all_data = []
 
     total_cosine_distance = 0
     total_wer_priv_text = 0
@@ -84,43 +85,64 @@ def main():
     for id, same_person_audio_list in data_set.items():
         for audio_info in same_person_audio_list:
             file_count += 1
+
             # Rewriting the wav files to fix the no riff header
             t_privatizer = sox.Transformer()
             t_raw = sox.Transformer()
 
+            fx = (
+                AudioEffectsChain().pitch(120.0)
+            )
+
             raw_wav_path = audio_info[0].replace('.wav', '_raw.wav')
-            priv_wav_path = audio_info[0].replace('.wav', '_priv.wav')
+            #priv_wav_path = audio_info[0].replace('.wav', '_priv.wav')
 
-            t_privatizer.pitch(-3.0)
+            #t_privatizer.pitch(-3.0)
 
-            t_privatizer.build(audio_info[0], priv_wav_path)
-            t_raw.build(audio_info[0], raw_wav_path)
+            #t_privatizer.build(audio_info[0], priv_wav_path)
+
 
             # Loading files for the speaker id
-            [priv_audio_spid, fs] = sf.read(priv_wav_path)
+            #[priv_audio_spid, fs] = sf.read(priv_wav_path)
             #[raw_audio_spid, fs2] = sf.read(raw_wav_path)
 
             # Extract d-vectors
-            #priv_d_vector = speaker_id_engine.generate_d_vector(priv_audio_spid)
-            #raw_d_vector = speaker_id_engine.generate_d_vector(raw_audio_spid)
+            # priv_d_vector = speaker_id_engine.generate_d_vector(priv_audio_spid)
+            # raw_d_vector = speaker_id_engine.generate_d_vector(raw_audio_spid)
             # Measure cosine similarity decay against original vector
-            #dist = cosine_similarity(priv_d_vector, audio_info[1])
-            #total_cosine_distance += dist
+            # dist = cosine_similarity(priv_d_vector, audio_info[1])
+            # total_cosine_distance += dist
 
-            priv_audio_s2t, nframes, frame_rate = s2t.load_audio_file(priv_wav_path)
             raw_audio_s2t, nframes, frame_rate = s2t.load_audio_file(raw_wav_path)
 
-            priv_text = s2t.convert_to_text(priv_audio_s2t, nframes, frame_rate)
+            priv_audio = fx(raw_audio_s2t)
+
+            sd.play(raw_audio_s2t, frame_rate)
+            status = sd.wait()
+
+            sd.play(priv_audio, frame_rate)
+            status = sd.wait()
+
+            priv_text = s2t.convert_to_text(priv_audio, nframes, frame_rate)
             raw_text = s2t.convert_to_text(raw_audio_s2t, nframes, frame_rate)
 
-            priv_error, raw_error = st2_acc(raw_text, priv_text, audio_info[2])
+            #priv_error, raw_error = st2_acc(raw_text, priv_text, audio_info[2])
 
-            total_wer_priv_text += priv_error
-            total_wer_raw_text += raw_error
+            #total_wer_priv_text += priv_error
+            #total_wer_raw_text += raw_error
+
+        # if file_count >= 10:
+        #     break
 
     avg_wer_priv_text = total_wer_priv_text / file_count
     avg_wer_raw_text = total_wer_raw_text / file_count
     total_cosine_distance = total_cosine_distance / file_count
+
+    all_data.append([3, avg_wer_raw_text, avg_wer_priv_text, total_cosine_distance])
+
+
+
+    #pd.DataFrame(data=all_data, columns=['Pitch', 'AVG raw text', 'AVG cosine distance'])
 
 
 if __name__ == '__main__':
