@@ -8,6 +8,7 @@ import sox
 import pandas as pd
 from pysndfx import AudioEffectsChain
 
+
 def cosine_similarity(x, y):
     return np.dot(x, y) / (np.sqrt(np.dot(x, x)) * np.sqrt(np.dot(y, y)))
 
@@ -68,7 +69,7 @@ def main():
     voice_vectors = np.load('d_vect_timit.npy', allow_pickle=True).item()
     voice_samples = np.load('data_lists/TIMIT_labels.npy', allow_pickle=True).item()
 
-    data_folder = "d:\\timit"
+    data_folder = "f:\\timit"
     data_set = parse_audio_files_path(voice_samples, voice_vectors, data_folder)
 
     #speaker_id_engine = si.SpeakerIdentification()
@@ -99,7 +100,7 @@ def main():
 
             #t_privatizer.pitch(-3.0)
 
-            #t_privatizer.build(audio_info[0], priv_wav_path)
+            t_privatizer.build(audio_info[0], raw_wav_path)
 
 
             # Loading files for the speaker id
@@ -113,18 +114,18 @@ def main():
             # dist = cosine_similarity(priv_d_vector, audio_info[1])
             # total_cosine_distance += dist
 
-            raw_audio_s2t, nframes, frame_rate = s2t.load_audio_file(raw_wav_path)
-
-            priv_audio = fx(raw_audio_s2t)
-
-            sd.play(raw_audio_s2t, frame_rate)
-            status = sd.wait()
-
-            sd.play(priv_audio, frame_rate)
-            status = sd.wait()
-
-            priv_text = s2t.convert_to_text(priv_audio, nframes, frame_rate)
-            raw_text = s2t.convert_to_text(raw_audio_s2t, nframes, frame_rate)
+            # raw_audio_s2t, nframes, frame_rate = s2t.load_audio_file(raw_wav_path)
+            #
+            # priv_audio = fx(raw_audio_s2t)
+            #
+            # sd.play(raw_audio_s2t, frame_rate)
+            # status = sd.wait()
+            #
+            # sd.play(priv_audio, frame_rate)
+            # status = sd.wait()
+            #
+            # priv_text = s2t.convert_to_text(priv_audio, nframes, frame_rate)
+            # raw_text = s2t.convert_to_text(raw_audio_s2t, nframes, frame_rate)
 
             #priv_error, raw_error = st2_acc(raw_text, priv_text, audio_info[2])
 

@@ -6,7 +6,7 @@ from dnn_models import MLP
 from dnn_models import SincNet as cnn
 from data_io import read_conf_inp, str_to_bool
 import sys
-
+from timeit import default_timer as timer
 
 class SpeakerIdentification:
 
@@ -35,6 +35,9 @@ class SpeakerIdentification:
         self.DNN2_net.eval()
 
     def generate_d_vector(self, signal):
+
+        print('Running inference.', file=sys.stderr)
+        inference_start = timer()
 
         d_vector_dim = self.fc_lay[-1]
 
@@ -117,9 +120,19 @@ class SpeakerIdentification:
 
             #d_vect_dict[dict_key] = d_vect_out.cpu().numpy()
 
+            inference_end = timer() - inference_start
+            print('Inference took %0.3fs' % inference_end, file=sys.stderr)
+
             print(d_vector)
 
         return d_vector
+
+    def load_audio_file(self, raw_wav_path):
+        import soundfile as sf
+        # Loading files for the speaker id
+        raw_audio_spid, fs = sf.read(raw_wav_path)
+
+        return raw_audio_spid, fs
 
     def build_model(self, options):
 
