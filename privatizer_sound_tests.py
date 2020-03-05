@@ -5,11 +5,6 @@ import os
 from pysndfx import AudioEffectsChain
 
 
-
-def cosine_similarity(x, y):
-    return np.dot(x, y) / (np.sqrt(np.dot(x, x)) * np.sqrt(np.dot(y, y)))
-
-
 # Creates a new list that only contains file paths which has a pre-calculated d-vector
 def parse_audio_files_path(voice_samples, voice_vectors, data_folder):
     found_ids = {}
@@ -54,25 +49,66 @@ def generate_effects():
 
     fxs = []
 
-    fxs.append(['Raw', None])
+    # Varying depth
+    # fx1 = (
+    #     AudioEffectsChain().tremolo(500, depth=100.0)
+    # )
+    #
+    # fxs.append(['Tremolo', fx1])
 
-    fx = (
-        AudioEffectsChain().pitch(-400)
-    )
+    # Varying room_scale and reverberance
+    # fx1 = (
+    #     AudioEffectsChain().reverb(reverberance=10,
+    #            hf_damping=90,
+    #            room_scale=10,
+    #            stereo_depth=100,
+    #            pre_delay=20,
+    #            wet_gain=0,
+    #            wet_only=False)
+    # )
+    #
+    # fxs.append(['Reverb', fx1])
 
-    fxs.append(['Pitch', fx])
+    # Varying tempo
+    # fx1 = (
+    #     AudioEffectsChain().tempo(0.3,
+    #           use_tree=False,
+    #           opt_flag=None,
+    #           segment=10,
+    #           search=30,
+    #           overlap=30)
+    # )
+    #
+    # fxs.append(['Tempo', fx1])
+    #
+    # fxs.append(['Raw', None])
 
+    # fx2 = (
+    #     AudioEffectsChain().pitch(-400)
+    # )
+    #
+    # fxs.append(['Pitch', fx2])
+
+    # Combined Effects temp, reverb,room,depth
     fx2 = (
-        AudioEffectsChain().pitch(400)
+        AudioEffectsChain().pitch(-400)
+            .tempo(0.5,
+                use_tree=False,
+                opt_flag=None,
+                segment=10,
+                search=30,
+                overlap=30)
+            .reverb(reverberance=10,
+                hf_damping=90,
+                room_scale=10,
+                stereo_depth=100,
+                pre_delay=20,
+                wet_gain=0,
+                wet_only=False)
+            .tremolo(500, depth=100.0)
     )
 
     fxs.append(['Pitch', fx2])
-
-    fx3 = (
-        AudioEffectsChain().phaser(0.5, 0.5)
-    )
-
-    fxs.append(['Phaser', fx3])
 
     return fxs
 
@@ -80,23 +116,24 @@ def generate_effects():
 def play_priv_sound_files(data_set):
     fxs = generate_effects()
 
-    for fx in fxs:
+    file_count = 0
 
-        file_count = 0
+    for id, same_person_audio_list in data_set.items():
+        for audio_info in same_person_audio_list:
+            file_count += 1
 
-        for id, same_person_audio_list in data_set.items():
-            for audio_info in same_person_audio_list:
-                file_count += 1
+            raw_wav_path = audio_info[0].replace('.wav', '_raw.wav')
+            print("\nFile nr: {} at: {}".format(file_count, raw_wav_path))
 
-                raw_wav_path = audio_info[0].replace('.wav', '_raw.wav')
-                print("\nFile nr: {} at: {}".format(file_count, raw_wav_path))
-
-                # Loading files for the speaker id
-                raw_audio_spid, fs = sf.read(raw_wav_path)
-
-                if fx[1] is None:
+            # Loading files for the speaker id
+            raw_audio_spid, fs = sf.read(raw_wav_path)
+            print("Now playing raw sound.")
+            sample_sound(raw_audio_spid, fs)
+            for fx in fxs:
+                if fx[1] is not None:
                     priv_audio = fx[1](raw_audio_spid)
-                    sample_sound(raw_audio_spid, fs)
+
+                    print("Now playing sound with {}".format(fx[0]))
                     sample_sound(priv_audio, fs)
 
 
@@ -109,7 +146,7 @@ def main():
     voice_vectors = np.load('d_vect_timit.npy', allow_pickle=True).item()
     voice_samples = np.load('data_lists/TIMIT_labels.npy', allow_pickle=True).item()
 
-    data_folder = "f:\\timit"
+    data_folder = "d:\\timit"
     data_set = parse_audio_files_path(voice_samples, voice_vectors, data_folder)
 
     play_priv_sound_files(data_set)
