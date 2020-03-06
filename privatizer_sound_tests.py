@@ -50,11 +50,11 @@ def generate_effects():
     fxs = []
 
     # Varying depth
-    # fx1 = (
-    #     AudioEffectsChain().tremolo(500, depth=100.0)
-    # )
-    #
-    # fxs.append(['Tremolo', fx1])
+    fx1 = (
+        AudioEffectsChain().tremolo(500, depth=0)
+    )
+
+    fxs.append(['Tremolo', fx1])
 
     # Varying room_scale and reverberance
     # fx1 = (
@@ -90,25 +90,25 @@ def generate_effects():
     # fxs.append(['Pitch', fx2])
 
     # Combined Effects temp, reverb,room,depth
-    fx2 = (
-        AudioEffectsChain().pitch(-400)
-            .tempo(0.5,
-                use_tree=False,
-                opt_flag=None,
-                segment=10,
-                search=30,
-                overlap=30)
-            .reverb(reverberance=10,
-                hf_damping=90,
-                room_scale=10,
-                stereo_depth=100,
-                pre_delay=20,
-                wet_gain=0,
-                wet_only=False)
-            .tremolo(500, depth=100.0)
-    )
-
-    fxs.append(['Pitch', fx2])
+    # fx2 = (
+    #     AudioEffectsChain().pitch(-400)
+    #         .tempo(0.5,
+    #             use_tree=False,
+    #             opt_flag=None,
+    #             segment=10,
+    #             search=30,
+    #             overlap=30)
+    #         .reverb(reverberance=10,
+    #             hf_damping=90,
+    #             room_scale=10,
+    #             stereo_depth=100,
+    #             pre_delay=20,
+    #             wet_gain=0,
+    #             wet_only=False)
+    #         .tremolo(500, depth=100.0)
+    # )
+    #
+    # fxs.append(['Pitch', fx2])
 
     return fxs
 

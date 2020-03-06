@@ -1,13 +1,11 @@
 import numpy as np
 import speaker_identification as si
-import soundfile as sf
 import sounddevice as sd
-import os
 from deep_speech import Speech2Text
-import sox
 import pandas as pd
 from pysndfx import AudioEffectsChain
 from jiwer import wer
+import os
 
 
 def cosine_similarity(x, y):
@@ -58,22 +56,99 @@ def generate_effects():
 
     fxs = []
 
-    fxs.append(['Raw', None])
+    #fxs.append(['Raw', None])
 
-    for pitch in range(-200, 220, 20):
-        # Shift in hertz
+    for pitch in range(-40, -440, -40):
+        # Shift in semitones (12 semitones = 1 octave)
+        fx = (
+            AudioEffectsChain().pitch(pitch)
+        )
+
+        fxs.append(['Pitch {}'.format(pitch), fx])
+    #
+    for pitch in range(40, 440, 40):
+        # Shift in semitones (12 semitones = 1 octave)
         fx = (
             AudioEffectsChain().pitch(pitch)
         )
 
         fxs.append(['Pitch {}'.format(pitch), fx])
 
-    for phaser_in in np.arange(0.1, 1.1, 0.1):
-        phaser_out = 1.1 - phaser_in
-        fx = (
-            AudioEffectsChain().phaser(phaser_in, 1.1 - phaser_out)
+    for depth in range(10, -1, -1):
+        # Tremolo depth
+        var_depth = 100 - depth * 10
+
+        if var_depth == 0:
+            var_depth = 1
+
+        fx1 = (
+            AudioEffectsChain().tremolo(500, depth=var_depth)
         )
-        fxs.append(['Phaser in {} out {}'.format(phaser_in, 1.1 - phaser_out), fx])
+        fxs.append(['Tremolo {}'.format(var_depth), fx1])
+
+    for var in range(0, 110, 10):
+        # Reverb power
+        var_room_scale = var
+        var_reverb = var
+        fx1 = (
+            AudioEffectsChain().reverb(reverberance=var_reverb,
+                                       hf_damping=90,
+                                       room_scale=var_room_scale,
+                                       stereo_depth=100,
+                                       pre_delay=20,
+                                       wet_gain=0,
+                                       wet_only=False)
+        )
+        fxs.append(['Reverberance rs {} rverb {}'.format(var, var), fx1])
+
+    for tempo_scale in range(10, -1, -1):
+        # Tempo scale
+        if tempo_scale == 0:
+            var_tempo_scale = .09
+        else:
+            var_tempo_scale = tempo_scale/10
+
+        fx1 = (
+            AudioEffectsChain().tempo(var_tempo_scale,
+                                      use_tree=False,
+                                      opt_flag=None,
+                                      segment=10,
+                                      search=30,
+                                      overlap=30)
+        )
+        fxs.append(['Tempo scale {}'.format(var_tempo_scale), fx1])
+
+    for var in range(10, -1, -1):
+
+        var_pitch = (400-(var*40))*(-1)
+        var_room_rev = (100 - var*10)
+
+        var_depth = 100 - var * 10
+        if var_depth == 0:
+            var_depth = 1
+
+        var_tempo_scale = var / 10
+        if var_tempo_scale == 0:
+            var_tempo_scale = .09
+
+        fx1 = (
+            AudioEffectsChain().pitch(var_pitch)
+                .tempo(var_tempo_scale,
+                       use_tree=False,
+                       opt_flag=None,
+                       segment=10,
+                       search=30,
+                       overlap=30)
+                .reverb(reverberance=var_room_rev,
+                        hf_damping=90,
+                        room_scale=var_room_rev,
+                        stereo_depth=100,
+                        pre_delay=20,
+                        wet_gain=0,
+                        wet_only=False)
+                .tremolo(500, depth=var_depth)
+        )
+        fxs.append(['Mixed level {}'.format(10-var), fx1])
 
     return fxs
 
@@ -102,6 +177,7 @@ def process_speak_id_experiment(data_set, play_sample=False):
                 raw_audio_s2t, frame_rate = ml_engine.load_audio_file(raw_wav_path)
 
                 if fx[1] != None:
+                    print("Applying sound fx {}".format(fx[0]))
                     priv_audio = fx[1](raw_audio_s2t)
                     if play_sample:
                         sample_sound(raw_audio_s2t, frame_rate)
@@ -151,9 +227,10 @@ def process_speech2text_experiment(data_set, play_sample=False):
                 raw_audio, nframes, frame_rate = ml_engine.load_audio_file(raw_wav_path)
 
                 if fx[1] != None:
+                    print("Applying sound fx {}".format(fx[0]))
                     priv_audio = fx[1](raw_audio)
                     if play_sample:
-                        sample_sound(raw_audio, frame_rate)
+                        #sample_sound(raw_audio, frame_rate)
                         sample_sound(priv_audio, frame_rate)
                 else:
                     priv_audio = raw_audio
@@ -175,23 +252,6 @@ def process_speech2text_experiment(data_set, play_sample=False):
     all_data_df.to_excel("s2t_output.xlsx")
 
 
-def model1_experiment(speaker_id_engine, raw_wav_path, fx, true_label):
-
-    # Loading files for the speaker id
-    [raw_audio_spid, fs2] = sf.read(raw_wav_path)
-
-    # Applying data transformation
-    priv_audio_spid = fx(raw_audio_spid)
-
-    priv_d_vector = speaker_id_engine.generate_d_vector(priv_audio_spid)
-
-    # Measure cosine similarity decay against original vector
-    #dist = cosine_similarity(priv_d_vector, audio_info[1])
-    dist = cosine_similarity(priv_d_vector, true_label)
-
-    return dist
-
-
 def sample_sound(priv_sound, frame_rate):
     sd.play(priv_sound, frame_rate)
     status = sd.wait()
@@ -201,11 +261,11 @@ def main():
     voice_vectors = np.load('d_vect_timit.npy', allow_pickle=True).item()
     voice_samples = np.load('data_lists/TIMIT_labels.npy', allow_pickle=True).item()
 
-    data_folder = "f:\\timit"
+    data_folder = "d:\\timit"
     data_set = parse_audio_files_path(voice_samples, voice_vectors, data_folder)
 
-    #process_speech2text_experiment(data_set)
-    process_speak_id_experiment(data_set)
+    process_speech2text_experiment(data_set, True)
+    #process_speak_id_experiment(data_set)
 
 
 if __name__ == '__main__':
