@@ -6,6 +6,7 @@ import pandas as pd
 from pysndfx import AudioEffectsChain
 from jiwer import wer
 import os
+import time
 
 
 def cosine_similarity(x, y):
@@ -65,7 +66,7 @@ def generate_effects():
         )
 
         fxs.append(['Pitch {}'.format(pitch), fx])
-    #
+
     for pitch in range(40, 440, 40):
         # Shift in semitones (12 semitones = 1 octave)
         fx = (
@@ -101,12 +102,11 @@ def generate_effects():
         )
         fxs.append(['Reverberance rs {} rverb {}'.format(var, var), fx1])
 
-    for tempo_scale in range(10, -1, -1):
+    for tempo_scale in range(75, 25, -5):
         # Tempo scale
-        if tempo_scale == 0:
-            var_tempo_scale = .09
-        else:
-            var_tempo_scale = tempo_scale/10
+        var_tempo_scale = tempo_scale / 100
+        # if var_tempo_scale == 0:
+        #     var_tempo_scale = .1
 
         fx1 = (
             AudioEffectsChain().tempo(var_tempo_scale,
@@ -118,18 +118,18 @@ def generate_effects():
         )
         fxs.append(['Tempo scale {}'.format(var_tempo_scale), fx1])
 
+    temp = 75
     for var in range(10, -1, -1):
 
-        var_pitch = (400-(var*40))*(-1)
-        var_room_rev = (100 - var*10)
+        var_pitch = (400 - (var * 40)) * (-1)
+        var_room_rev = (100 - var * 10)
 
         var_depth = 100 - var * 10
         if var_depth == 0:
             var_depth = 1
 
-        var_tempo_scale = var / 10
-        if var_tempo_scale == 0:
-            var_tempo_scale = .09
+        var_tempo_scale = temp/100
+        temp -= 5
 
         fx1 = (
             AudioEffectsChain().pitch(var_pitch)
@@ -148,18 +148,19 @@ def generate_effects():
                         wet_only=False)
                 .tremolo(500, depth=var_depth)
         )
-        fxs.append(['Mixed level {}'.format(10-var), fx1])
+        fxs.append(['Mixed level {}'.format(10 - var), fx1])
 
     return fxs
 
 
-def process_speak_id_experiment(data_set, play_sample=False):
+def process_speaker_id_experiment(data_set, play_sample=False):
 
-    ml_engine = si.SpeakerIdentification()
+    ml_engine_si = si.SpeakerIdentification()
 
     fxs = generate_effects()
 
     all_data = []
+    ml_engine_reset = 0
 
     for fx in fxs:
 
@@ -169,35 +170,47 @@ def process_speak_id_experiment(data_set, play_sample=False):
         for id, same_person_audio_list in data_set.items():
             for audio_info in same_person_audio_list:
                 file_count += 1
+                ml_engine_reset += 1
 
                 raw_wav_path = audio_info[0].replace('.wav', '_raw.wav')
                 print("\nFile nr: {} at: {}".format(file_count, raw_wav_path))
 
                 # Load the file for the Speech Recog
-                raw_audio_s2t, frame_rate = ml_engine.load_audio_file(raw_wav_path)
+                raw_audio_sid, frame_rate = ml_engine_si.load_audio_file(raw_wav_path)
 
-                if fx[1] != None:
+                if fx[1] is not None:
                     print("Applying sound fx {}".format(fx[0]))
-                    priv_audio = fx[1](raw_audio_s2t)
+                    priv_audio = fx[1](raw_audio_sid)
                     if play_sample:
-                        sample_sound(raw_audio_s2t, frame_rate)
+                        sample_sound(raw_audio_sid, frame_rate)
                         sample_sound(priv_audio, frame_rate)
                 else:
-                    priv_audio = raw_audio_s2t
+                    priv_audio = raw_audio_sid
 
                 # Extracting d-vectors
-                priv_d_vector = ml_engine.generate_d_vector(priv_audio)
+                priv_d_vector = ml_engine_si.generate_d_vector(priv_audio)
 
                 #Measure cosine similarity decay against original vector
                 dist = cosine_similarity(priv_d_vector, audio_info[1])
                 total_cosine_diff += dist
 
-            if file_count >= 100:
+            if file_count >= 5:
+                # Mitigating gpu memory leak
+                print("Cleaning GPU cache!")
+                ml_engine.empty_gpu_cache()
                 break
+            elif ml_engine_reset >= 300:
+                ml_engine.empty_gpu_cache()
+                print("Releasing ml engine object to free GPU memory.")
+                ml_engine = si.SpeakerIdentification()
+                time.sleep(5)
+                ml_engine_reset = 0
 
         avg_cos_priv = total_cosine_diff / file_count
 
         all_data.append([fx[0], avg_cos_priv])
+
+    all_data_np = np.asarray(all_data).transpose()
 
     all_data_df = pd.DataFrame(data=all_data, columns=['Pitch', 'AVG Cosine diff'])
     all_data_df.to_excel("sid_output.xlsx")
@@ -205,7 +218,7 @@ def process_speak_id_experiment(data_set, play_sample=False):
 
 def process_speech2text_experiment(data_set, play_sample=False):
 
-    ml_engine = Speech2Text()
+    ml_engine_s2t = Speech2Text()
 
     fxs = generate_effects()
 
@@ -224,7 +237,7 @@ def process_speech2text_experiment(data_set, play_sample=False):
                 print("\nFile nr: {} at: {}".format(file_count, raw_wav_path))
 
                 # Load the file for the Speech Recog
-                raw_audio, nframes, frame_rate = ml_engine.load_audio_file(raw_wav_path)
+                raw_audio, nframes, frame_rate = ml_engine_s2t.load_audio_file(raw_wav_path)
 
                 if fx[1] != None:
                     print("Applying sound fx {}".format(fx[0]))
@@ -235,7 +248,7 @@ def process_speech2text_experiment(data_set, play_sample=False):
                 else:
                     priv_audio = raw_audio
 
-                priv_text = ml_engine.convert_to_text(priv_audio, nframes, frame_rate)
+                priv_text = ml_engine_s2t.convert_to_text(priv_audio, nframes, frame_rate)
 
                 priv_error = wer(audio_info[2], priv_text)
 
@@ -261,11 +274,12 @@ def main():
     voice_vectors = np.load('d_vect_timit.npy', allow_pickle=True).item()
     voice_samples = np.load('data_lists/TIMIT_labels.npy', allow_pickle=True).item()
 
-    data_folder = "d:\\timit"
+    data_folder = "f:\\timit"
     data_set = parse_audio_files_path(voice_samples, voice_vectors, data_folder)
 
-    process_speech2text_experiment(data_set, True)
-    #process_speak_id_experiment(data_set)
+    #process_speech2text_experiment(data_set, False)
+    process_speaker_id_experiment(data_set, False)
+
 
 
 if __name__ == '__main__':
