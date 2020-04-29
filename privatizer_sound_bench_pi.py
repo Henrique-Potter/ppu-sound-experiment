@@ -50,15 +50,13 @@ def generate_effects():
 
     fxs = []
 
-    # fxs.append(['Raw', None])
+    for pitch in range(-40, -440, -40):
+        #Shift in semitones (12 semitones = 1 octave)
+        fx = (
+          AudioEffectsChain().pitch(pitch)
+        )
 
-    #for pitch in range(-40, -440, -40):
-        # Shift in semitones (12 semitones = 1 octave)
-     #   fx = (
-     #      AudioEffectsChain().pitch(pitch)
-     #   )
-
-     #   fxs.append(['Pitch {}'.format(pitch), fx])
+        fxs.append(['Pitch {}'.format(pitch), fx])
 
     for pitch in range(40, 440, 40):
         # Shift in semitones (12 semitones = 1 octave)
@@ -68,48 +66,48 @@ def generate_effects():
 
         fxs.append(['Pitch {}'.format(pitch), fx])
 
-#    for depth in range(10, -1, -2):
+    for depth in range(10, -1, -2):
         # Tremolo depth
-#        var_depth = 100 - depth * 10
+        var_depth = 100 - depth * 10
 
-#        if var_depth == 0:
-#            var_depth = 1
+        if var_depth == 0:
+           var_depth = 1
 
-#        fx1 = (
-#            AudioEffectsChain().tremolo(500, depth=var_depth)
-#        )
-#        fxs.append(['Tremolo {}'.format(var_depth), fx1])
+        fx1 = (
+           AudioEffectsChain().tremolo(500, depth=var_depth)
+        )
+        fxs.append(['Tremolo {}'.format(var_depth), fx1])
 
-#    for var in range(0, 110, 20):
+    for var in range(0, 110, 20):
         # Reverb power
-#        var_room_scale = var
-#        var_reverb = var
-#        fx1 = (
-#            AudioEffectsChain().reverb(reverberance=var_reverb,
-#                                       hf_damping=90,
-#                                       room_scale=var_room_scale,
-#                                       stereo_depth=100,
-#                                       pre_delay=20,
-#                                       wet_gain=0,
-#                                       wet_only=False)
-#        )
-#        fxs.append(['Reverberance rs {} rverb {}'.format(var, var), fx1])
+        var_room_scale = var
+        var_reverb = var
+        fx1 = (
+           AudioEffectsChain().reverb(reverberance=var_reverb,
+                                      hf_damping=90,
+                                      room_scale=var_room_scale,
+                                      stereo_depth=100,
+                                      pre_delay=20,
+                                      wet_gain=0,
+                                      wet_only=False)
+        )
+        fxs.append(['Reverberance rs {} rverb {}'.format(var, var), fx1])
 
-#    for tempo_scale in range(75, 25, -10):
-        # Tempo scale
-#        var_tempo_scale = tempo_scale / 100
-        # if var_tempo_scale == 0:
-        #     var_tempo_scale = .1
+    for tempo_scale in range(75, 25, -10):
+        #Tempo scale
+        var_tempo_scale = tempo_scale / 100
+        if var_tempo_scale == 0:
+            var_tempo_scale = .1
 
-#        fx1 = (
-#            AudioEffectsChain().tempo(var_tempo_scale,
-#                                      use_tree=False,
-#                                      opt_flag=None,
-#                                      segment=10,
-#                                      search=30,
-#                                      overlap=30)
-#        )
-#        fxs.append(['Tempo scale {}'.format(var_tempo_scale), fx1])
+        fx1 = (
+           AudioEffectsChain().tempo(var_tempo_scale,
+                                     use_tree=False,
+                                     opt_flag=None,
+                                     segment=10,
+                                     search=30,
+                                     overlap=30)
+        )
+        fxs.append(['Tempo scale {}'.format(var_tempo_scale), fx1])
 
     tempo_var = 75
     for var in range(10, -1, -1):
@@ -166,13 +164,17 @@ def bench_sound_effect(data_set):
             for fx in fxs:
                 if fx[1] is not None:
                     print("Starting {} sound effect benchmark.".format(fx[0]))
-                    input("Press any key to continue...")
+                    #input("Press any key to continue...")
                     start_time = t.time()
-                    for i in range(500):
+                    counter = 0
+
+                    for i in range(5):
                         priv_audio = fx[1](raw_audio_spid)
+                        print("fx {} round {}".format(fx[0], i))
+                        counter += 1
                     total_time = start_time-t.time()
 
-                    effects_time.append((fx[0], total_time))
+                    effects_time.append((fx[0], total_time/counter))
 
             all_data_df = pd.DataFrame(data=effects_time, columns=['Effect', 'Time to apply 1000x'])
             all_data_df.to_excel("effects_time_output.xlsx")
