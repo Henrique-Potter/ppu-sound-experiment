@@ -1,13 +1,7 @@
-import numpy as np
 import soundfile as sf
 import os
-import pandas as pd
 import time as t
-from pysndfx import AudioEffectsChain
-
-
-# Creates a new list that only contains file paths which has a pre-calculated d-vector
-from commons_tools import sound_blur, sound_blur_with_numpy
+from commons_tools import *
 
 
 def parse_audio_files_path(voice_samples, voice_vectors, data_folder):
@@ -49,108 +43,6 @@ def load_transcript(data_folder, file):
     return full_path, transcript_text
 
 
-def generate_effects():
-
-    fxs = []
-
-    for window_size in range(3, 18, 2):
-        # Sliding window avg
-        fxs.append(('Blur window {}'.format(window_size), window_size))
-
-    for pitch in range(-40, -440, -40):
-        #Shift in semitones (12 semitones = 1 octave)
-        fx = (
-          AudioEffectsChain().pitch(pitch)
-        )
-
-        fxs.append(['Pitch {}'.format(pitch), fx])
-
-    for pitch in range(40, 440, 40):
-        # Shift in semitones (12 semitones = 1 octave)
-        fx = (
-            AudioEffectsChain().pitch(pitch)
-        )
-
-        fxs.append(['Pitch {}'.format(pitch), fx])
-
-    for depth in range(10, -1, -2):
-        # Tremolo depth
-        var_depth = 100 - depth * 10
-
-        if var_depth == 0:
-           var_depth = 1
-
-        fx1 = (
-           AudioEffectsChain().tremolo(500, depth=var_depth)
-        )
-        fxs.append(['Tremolo {}'.format(var_depth), fx1])
-
-    for var in range(0, 110, 20):
-        # Reverb power
-        var_room_scale = var
-        var_reverb = var
-        fx1 = (
-           AudioEffectsChain().reverb(reverberance=var_reverb,
-                                      hf_damping=90,
-                                      room_scale=var_room_scale,
-                                      stereo_depth=100,
-                                      pre_delay=20,
-                                      wet_gain=0,
-                                      wet_only=False)
-        )
-        fxs.append(['Reverberance rs {} rverb {}'.format(var, var), fx1])
-
-    for tempo_scale in range(75, 25, -10):
-        #Tempo scale
-        var_tempo_scale = tempo_scale / 100
-        if var_tempo_scale == 0:
-            var_tempo_scale = .1
-
-        fx1 = (
-           AudioEffectsChain().tempo(var_tempo_scale,
-                                     use_tree=False,
-                                     opt_flag=None,
-                                     segment=10,
-                                     search=30,
-                                     overlap=30)
-        )
-        fxs.append(['Tempo scale {}'.format(var_tempo_scale), fx1])
-
-    tempo_var = 75
-    for var in range(10, -1, -1):
-
-        var_pitch = (400 - (var * 40)) * (-1)
-        var_room_rev = (100 - var * 10)
-
-        var_depth = 100 - var * 10
-        if var_depth == 0:
-            var_depth = 1
-
-        var_tempo_scale = tempo_var/100
-        tempo_var -= 5
-
-        fx1 = (
-            AudioEffectsChain().pitch(var_pitch)
-                .tempo(var_tempo_scale,
-                       use_tree=False,
-                       opt_flag=None,
-                       segment=10,
-                       search=30,
-                       overlap=30)
-                .reverb(reverberance=var_room_rev,
-                        hf_damping=90,
-                        room_scale=var_room_rev,
-                        stereo_depth=100,
-                        pre_delay=20,
-                        wet_gain=0,
-                        wet_only=False)
-                .tremolo(500, depth=var_depth)
-        )
-        fxs.append(['Mixed level {}'.format(10 - var), fx1])
-
-    return fxs
-
-
 def bench_sound_effect(data_set):
     fxs = generate_effects()
 
@@ -178,7 +70,7 @@ def bench_sound_effect(data_set):
                     start_time = t.time()
 
                     for i in range(500):
-                        np.rint(sound_blur_with_numpy(raw_audio, window)).astype(np.int16)
+                        priv_audio = np.rint(sound_blur_with_numpy(raw_audio, window)).astype(np.int16)
                         print("fx {} round {}".format(fx[0], i))
                         counter += 1
 
