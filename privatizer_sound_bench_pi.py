@@ -168,11 +168,11 @@ def bench_sound_effect(data_set):
                     start_time = t.time()
                     counter = 0
 
-                    for i in range(5):
+                    for i in range(500):
                         priv_audio = fx[1](raw_audio_spid)
                         print("fx {} round {}".format(fx[0], i))
                         counter += 1
-                    total_time = start_time-t.time()
+                    total_time = t.time()-start_time
 
                     effects_time.append((fx[0], total_time/counter))
 
