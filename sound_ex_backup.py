@@ -72,7 +72,7 @@ def main():
     data_folder = "f:\\timit"
     data_set = parse_audio_files_path(voice_samples, voice_vectors, data_folder)
 
-    #speaker_id_engine = si.SpeakerIdentification()
+    speaker_id_engine = si.SpeakerIdentification()
     s2t = Speech2Text()
 
     all_data = []
@@ -104,12 +104,12 @@ def main():
 
 
             # Loading files for the speaker id
-            #[priv_audio_spid, fs] = sf.read(priv_wav_path)
-            #[raw_audio_spid, fs2] = sf.read(raw_wav_path)
+            [priv_audio_spid, fs] = sf.read(priv_wav_path)
+            [raw_audio_spid, fs2] = sf.read(raw_wav_path)
 
             # Extract d-vectors
-            # priv_d_vector = speaker_id_engine.generate_d_vector(priv_audio_spid)
-            # raw_d_vector = speaker_id_engine.generate_d_vector(raw_audio_spid)
+            priv_d_vector = speaker_id_engine.generate_d_vector(priv_audio_spid)
+            raw_d_vector = speaker_id_engine.generate_d_vector(raw_audio_spid)
             # Measure cosine similarity decay against original vector
             # dist = cosine_similarity(priv_d_vector, audio_info[1])
             # total_cosine_distance += dist

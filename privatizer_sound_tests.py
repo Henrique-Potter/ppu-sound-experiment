@@ -52,7 +52,6 @@ def generate_effects():
     fxs = []
 
     # fxs.append(['Raw', None])
-
     for pitch in range(-40, -440, -40):
         # Shift in semitones (12 semitones = 1 octave)
         fx = (

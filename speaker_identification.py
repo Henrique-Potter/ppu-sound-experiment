@@ -145,7 +145,6 @@ class SpeakerIdentification:
 
         # Loading files for the speaker id
         raw_audio_spid, fs = sf.read(raw_wav_path)
-
         return raw_audio_spid, fs
 
     def build_model(self, options):

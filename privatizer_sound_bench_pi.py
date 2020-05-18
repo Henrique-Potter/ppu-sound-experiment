@@ -7,6 +7,9 @@ from pysndfx import AudioEffectsChain
 
 
 # Creates a new list that only contains file paths which has a pre-calculated d-vector
+from commons_tools import sound_blur, sound_blur_with_numpy
+
+
 def parse_audio_files_path(voice_samples, voice_vectors, data_folder):
     found_ids = {}
 
@@ -49,6 +52,10 @@ def load_transcript(data_folder, file):
 def generate_effects():
 
     fxs = []
+
+    for window_size in range(3, 18, 2):
+        # Sliding window avg
+        fxs.append(('Blur window {}'.format(window_size), window_size))
 
     for pitch in range(-40, -440, -40):
         #Shift in semitones (12 semitones = 1 octave)
@@ -159,17 +166,32 @@ def bench_sound_effect(data_set):
             print("\nFile nr: {} at: {}".format(file_count, raw_wav_path))
 
             # Loading files for the speaker id
-            raw_audio_spid, fs = sf.read(raw_wav_path)
+            raw_audio, fs = sf.read(raw_wav_path)
 
             for fx in fxs:
-                if fx[1] is not None:
+                if 'Blur' in fx[0]:
+
+                    print("Starting {} sound effect benchmark.".format(fx[0]))
+                    #input("Press any key to continue...")
+                    counter = 0
+                    window = fx[1]
+                    start_time = t.time()
+
+                    for i in range(500):
+                        np.rint(sound_blur_with_numpy(raw_audio, window)).astype(np.int16)
+                        print("fx {} round {}".format(fx[0], i))
+                        counter += 1
+
+                    total_time = t.time()-start_time
+                    effects_time.append((fx[0], total_time/counter))
+                else:
                     print("Starting {} sound effect benchmark.".format(fx[0]))
                     #input("Press any key to continue...")
                     start_time = t.time()
                     counter = 0
 
                     for i in range(500):
-                        priv_audio = fx[1](raw_audio_spid)
+                        priv_audio = fx[1](raw_audio)
                         print("fx {} round {}".format(fx[0], i))
                         counter += 1
                     total_time = t.time()-start_time
@@ -187,6 +209,7 @@ def main():
     voice_samples = np.load('data_lists/TIMIT_labels.npy', allow_pickle=True).item()
 
     data_folder = "/home/pi/projects/TIMIT"
+    data_folder = "f:\\timit"
     data_set = parse_audio_files_path(voice_samples, voice_vectors, data_folder)
 
     bench_sound_effect(data_set)
