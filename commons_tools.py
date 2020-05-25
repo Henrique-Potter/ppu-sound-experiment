@@ -27,8 +27,7 @@ def sound_blur(sound_vector, w_size):
 # w_size is the windows size
 def sound_blur_with_numpy(sound_vector, w_size):
 
-    mv = np.convolve(sound_vector, np.ones((w_size,))/w_size, mode='same')
-    return mv
+    return np.convolve(sound_vector, np.ones((w_size,))/w_size, mode='same')
 
 
 # Averaging sound amplitude with a sliding window
@@ -45,7 +44,7 @@ def generate_effects():
     #
     # fxs.append(['Raw', None])
 
-    for window_size in range(3, 18, 2):
+    for window_size in range(3, 22, 2):
         # Sliding window avg
         fxs.append(('Blur window {}'.format(window_size), window_size))
 
