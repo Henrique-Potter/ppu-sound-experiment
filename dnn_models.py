@@ -2,9 +2,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-import sys
 from torch.autograd import Variable
 import math
+
 
 def flip(x, dim):
     xsize = x.size()
@@ -16,11 +16,11 @@ def flip(x, dim):
     return x.view(xsize)
 
 
-def sinc(band,t_right):
-    y_right= torch.sin(2*math.pi*band*t_right)/(2*math.pi*band*t_right)
-    y_left= flip(y_right,0)
+def sinc(band, t_right):
+    y_right = torch.sin(2*math.pi*band*t_right)/(2*math.pi*band*t_right)
+    y_left = flip(y_right, 0)
 
-    y=torch.cat([y_left,Variable(torch.ones(1)).cuda(),y_right])
+    y = torch.cat([y_left, Variable(torch.ones(1)).cuda(), y_right])
 
     return y
     
@@ -362,8 +362,8 @@ class MLP(nn.Module):
 
 class SincNet(nn.Module):
     
-    def __init__(self,options):
-       super(SincNet,self).__init__()
+    def __init__(self, options):
+       super(SincNet, self).__init__()
     
        self.cnn_N_filt=options['cnn_N_filt']
        self.cnn_len_filt=options['cnn_len_filt']

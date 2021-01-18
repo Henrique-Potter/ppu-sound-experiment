@@ -54,6 +54,7 @@ class SpeakerIdentification:
             # Amplitude normalization
             signal = signal / np.max(np.abs(signal))
 
+            # Creates a new tensor in the device (GPU or CPU)
             signal = torch.from_numpy(signal).float().to(device).contiguous()
 
             # Small fr

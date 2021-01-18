@@ -39,7 +39,6 @@ class Speech2Text:
         except OSError as e:
             raise OSError(e.errno,
                           'SoX not found, use {}hz files or install it: {}'.format(desired_sample_rate, e.strerror))
-
         return desired_sample_rate, np.frombuffer(output, np.int16)
 
     @staticmethod
@@ -47,7 +46,6 @@ class Speech2Text:
         return ''.join(item.character for item in metadata.items)
 
     def words_from_metadata(self, metadata):
-
         word = ""
         word_list = []
         word_start_time = 0

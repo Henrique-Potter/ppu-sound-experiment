@@ -102,7 +102,6 @@ def main():
 
             t_privatizer.build(audio_info[0], raw_wav_path)
 
-
             # Loading files for the speaker id
             [priv_audio_spid, fs] = sf.read(priv_wav_path)
             [raw_audio_spid, fs2] = sf.read(raw_wav_path)
