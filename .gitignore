@@ -3,3 +3,4 @@ venv/
 models/output_graph.pbmm
 *.xlsx
 __pycache__/
+models/frozen_graphs/
