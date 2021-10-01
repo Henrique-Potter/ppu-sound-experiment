@@ -4,7 +4,8 @@ def cosine_similarity(x, y):
     return np.dot(x, y) / (np.sqrt(np.dot(x, x)) * np.sqrt(np.dot(y, y)))
 
 
-# Creates a new list that only contains file paths which has a pre-calculated d-vector
+# Creates a new list that only contains file paths, transcripts, and a pre-calculated d-vector
+# Facilitates models performance evaluation
 def parse_audio_files_path(voice_samples, voice_vectors, data_folder):
     found_ids = {}
 
@@ -250,7 +251,7 @@ def generate_effects(max_effects=False):
 
 
 def generate_effects_v2():
-
+    from pysndfx import AudioEffectsChain
     fxs = []
 
     # fxs.append(['Raw', None])

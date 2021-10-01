@@ -70,7 +70,7 @@ def main():
     voice_samples = np.load('../data_lists/TIMIT_labels.npy', allow_pickle=True).item()
 
     # Path to timit dataset
-    data_folder = "f:\\timit"
+    data_folder = "d:\\timit"
     data_set = parse_audio_files_path(voice_samples, voice_vectors, data_folder)
 
     bench_sound_effect(data_set)
